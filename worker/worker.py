@@ -34,15 +34,24 @@ def consume():
                 # filename = filename + '.flac'
                 # result = generator(filename)
                 r = RandomWords()
-                str = ""
-                for i in range(100):
-                    str += r.get_random_word()
-                    str += " "
+                textFromSpeech = ""
+                for i in range(50):
+                    textFromSpeech += r.get_random_word()
+                    textFromSpeech += " "    
+                logger.info(f'Results for job{msg_id} is:\n{textFromSpeech}')
 
-    
-                logger.info(f'Results for job{msg_id} is:\n{str}')
-
-                sqs_client.delete_message(QueueUrl=queue_name, ReceiptHandle=receipt_handle)
+                #write result to DynamoDB
+                try: 
+                    dynamodb = boto3.resource('dynamodb')
+                    table = dynamodb.Table('khader-speechText')
+                    table.put_item(Item={
+                        "jobID": msg_id ,
+                        "textFromSpeech": textFromSpeech
+                    })
+                    logger.info("Item saved successfully!")
+                    sqs_client.delete_message(QueueUrl=queue_name, ReceiptHandle=receipt_handle)
+                except Exception as e:
+                    logger.info(f"couldn't save item in DynamoDB due to {e}")
 
             except Exception as e:
                 logger.error(str(e))

@@ -13,6 +13,31 @@ sqs_client = boto3.client('sqs', region_name='eu-west-3')
 def index():
     return render_template('index.html')
 
+@app.route('/status')
+def check_status():
+    job_id = request.args.get('job_id')
+
+    # TODO:
+    '''
+     1. Query the DynamoDB table to fetch results
+     2. if results found for the given job_id, return `jsonify(status=200, response=text)`
+     3. else, return `jsonify(status=0)`
+    '''
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('khader-speechText')
+    try: 
+        response = table.get_item(
+        Key={
+            'jobID': job_id
+            }
+        )
+        item = response['Item']
+        logger.info(f"Item recieved successfully!")
+
+        return jsonify(status=200, response=item['textFromSpeech'])
+    except Exception as e:
+        logger.info(f"Couldn't get item due to {e}")
+    return jsonify(status=0)
 
 @app.route('/submit', methods=['POST'])
 def submit_youtube_url():

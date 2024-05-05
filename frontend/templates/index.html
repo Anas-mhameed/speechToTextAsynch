@@ -70,8 +70,29 @@
             .then(data => {
 
                 if (data.status === 200) {
-                    responseText.textContent = data.response;
-                    spinner.style.display = 'none';
+
+                    const job_id = data.job_id;
+                    const retry = 0;
+
+                    const interval = setInterval(function() {
+                    fetch('/status?job_id=' + job_id)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 200) {
+                                clearInterval(interval);
+                                responseText.textContent = data.response;
+                                spinner.style.display = 'none';
+                            } else {
+                                retry++;
+                                if (retry > 20){
+                                    clearInterval(interval);
+                                    responseText.textContent = 'Server failed to process your video, please try again.';
+                                    spinner.style.display = 'none';
+                                }
+                            }
+                        })
+                        .catch(error => console.error('Error checking status:', error));
+                    }, 5000);
                 } else {
                     console.error('Error:', data.response);
                 }
