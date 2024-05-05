@@ -1,23 +1,24 @@
-from urllib.parse import quote
 from flask import Flask, render_template, request, jsonify
+import boto3
 from loguru import logger
-import requests
 
 
 app = Flask(__name__)
+
+queue_name = 'khader-youtube-jobs'
+sqs_client = boto3.client('sqs', region_name='eu-west-3')
 
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/submit', methods=['POST'])
 def submit_youtube_url():
     youtube_url = request.form.get('youtube_url')
-    response = requests.get(f'http://localhost:8081?youtube_url={quote(youtube_url)}', timeout=120)
-    return jsonify(status=200, response=response.text)
-
-
+    response = sqs_client.send_message(QueueUrl=queue_name, MessageBody=youtube_url)
+    return jsonify(status=200, job_id=response['MessageId'])
 
 
 if __name__ == '__main__':
